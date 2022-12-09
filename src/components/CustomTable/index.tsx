@@ -1,5 +1,5 @@
-import { Children, FC, Fragment, useEffect, useState } from 'react';
-import { StyledTable } from './style';
+import { Children, FC, Fragment, useState } from 'react';
+import { StyledTable, StyledTbody, StyledTd, StyledTh, StyledThead, StyledTr } from './style';
 import { BsArrowDownUp } from 'react-icons/bs';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
@@ -13,6 +13,7 @@ interface TableProps {
 export const Table: FC<TableProps> = (props) => {
 	const [body, setBody] = useState(props.body);
 	const [controlOrder, setControlOrder] = useState<Array<boolean>>([]);
+	const [numCellExpand, setNumCellExpand] = useState<number>(-1);
 
 	let breaks: any = {};
 
@@ -54,34 +55,56 @@ export const Table: FC<TableProps> = (props) => {
 		setControlOrder(controlOrderAux);
 	};
 
+	const expandCell = (e: number) => {
+		console.log(e);
+		setNumCellExpand(e);
+	};
+
 	return (
 		<>
 			<StyledTable>
-				<thead>
-					<tr>
+				<StyledThead>
+					<StyledTr>
 						{props.head.map((e, ind) => (
 							<Fragment key={ind}>
 								{breaks[ind] && (
-									<th
+									<StyledTh
 										onClick={() => (typeof props.body[0][ind] === 'string' || typeof props.body[0][ind] === 'number') && handleClick(ind)}
 										style={{ width: props.columnSize[ind] }}
 									>
 										{e} {(typeof props.body[0][ind] === 'string' || typeof props.body[0][ind] === 'number') && <BsArrowDownUp />}
-									</th>
+									</StyledTh>
 								)}
 							</Fragment>
 						))}
-					</tr>
-				</thead>
-				<tbody>
+					</StyledTr>
+				</StyledThead>
+				<StyledTbody>
 					{body.map((e, i) => (
-						<tr key={i}>
-							{e.map((ele, ind) => (
-								<Fragment key={ind}>{breaks[ind] && <td>{ele}</td>}</Fragment>
-							))}
-						</tr>
+						<Fragment key={i}>
+							<StyledTr onClick={() => Object.keys(breaks).some((e) => !breaks[e]) && expandCell(i)}>
+								{e.map((ele, ind) => (
+									<Fragment key={ind}>{breaks[ind] && <StyledTd>{ele}</StyledTd>}</Fragment>
+								))}
+							</StyledTr>
+
+							{numCellExpand === i && Object.keys(breaks).findIndex((element) => !breaks[element]) !== -1 && (
+								<>
+									{e.map(
+										(value, index) =>
+											index >= Object.keys(breaks).findIndex((element) => !breaks[element]) && (
+												<>
+													<div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', width: '100%' }}>
+														{props.head[index]}: {value}
+													</div>
+												</>
+											)
+									)}
+								</>
+							)}
+						</Fragment>
 					))}
-				</tbody>
+				</StyledTbody>
 			</StyledTable>
 		</>
 	);
