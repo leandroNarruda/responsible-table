@@ -1,25 +1,31 @@
-import { Children, FC, useEffect, useState } from 'react';
+import { Children, FC, Fragment, useEffect, useState } from 'react';
 import { StyledTable } from './style';
 import { BsArrowDownUp } from 'react-icons/bs';
-import { useTableContext } from '../../providers/Table';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
 interface TableProps {
 	children?: any;
 	head: Array<any>;
 	body: Array<Array<any>>;
+	columnSize: Array<number>;
 }
 
 export const Table: FC<TableProps> = (props) => {
-	const { column } = useTableContext();
-
 	const [body, setBody] = useState(props.body);
 	const [controlOrder, setControlOrder] = useState<Array<boolean>>([]);
 
+	let breaks: any = {};
+
+	props.columnSize.forEach((e, i) => {
+		breaks[props.columnSize.length - i - 1] = useMediaQuery(
+			`(min-width: ${i > 0 ? props.columnSize.slice(0, -i).reduce((a, b) => a + b) : props.columnSize.reduce((a, b) => a + b)}px)`
+		);
+	});
 	const handleClick = (e: number) => {
 		const controlOrderAux = [...controlOrder];
-		controlOrderAux[e] = !controlOrder[e];
+		controlOrderAux[e] = controlOrder[e] === undefined ? true : !controlOrder[e];
 		let bodyAux;
-		if (typeof body[e] === 'string') {
+		if (isNaN(body[0][e])) {
 			bodyAux = body.sort((a, b) => {
 				if (a[e].toLowerCase() < b[e].toLowerCase()) {
 					return -1;
@@ -39,7 +45,7 @@ export const Table: FC<TableProps> = (props) => {
 			});
 		}
 
-		if (controlOrder[e]) {
+		if (controlOrderAux[e]) {
 			setBody([...bodyAux]);
 		} else {
 			setBody([...bodyAux.reverse()]);
@@ -54,12 +60,16 @@ export const Table: FC<TableProps> = (props) => {
 				<thead>
 					<tr>
 						{props.head.map((e, ind) => (
-							<th
-								key={ind}
-								onClick={() => (typeof props.body[0][ind] === 'string' || typeof props.body[0][ind] === 'number') && handleClick(ind)}
-							>
-								{e} {(typeof props.body[0][ind] === 'string' || typeof props.body[0][ind] === 'number') && <BsArrowDownUp />}
-							</th>
+							<Fragment key={ind}>
+								{breaks[ind] && (
+									<th
+										onClick={() => (typeof props.body[0][ind] === 'string' || typeof props.body[0][ind] === 'number') && handleClick(ind)}
+										style={{ width: props.columnSize[ind] }}
+									>
+										{e} {(typeof props.body[0][ind] === 'string' || typeof props.body[0][ind] === 'number') && <BsArrowDownUp />}
+									</th>
+								)}
+							</Fragment>
 						))}
 					</tr>
 				</thead>
@@ -67,7 +77,7 @@ export const Table: FC<TableProps> = (props) => {
 					{body.map((e, i) => (
 						<tr key={i}>
 							{e.map((ele, ind) => (
-								<td key={ind}>{ele}</td>
+								<Fragment key={ind}>{breaks[ind] && <td>{ele}</td>}</Fragment>
 							))}
 						</tr>
 					))}
